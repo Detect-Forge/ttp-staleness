@@ -54,6 +54,7 @@ def main() -> None:
     type=click.Choice(["enterprise-attack", "ics-attack", "mobile-attack"]),
     default=settings.attack_domain,
     show_default=True,
+    help="ATT&CK domain to fetch",
 )
 def scan(
     rule_dir: Path,

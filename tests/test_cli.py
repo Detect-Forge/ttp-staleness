@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
 from click.testing import CliRunner
+from pytest_mock import MockerFixture
 
 from ttp_staleness import __version__
 from ttp_staleness.cli import main
+from ttp_staleness.models import AttackIndex, Finding, Report, Rule
 
 
 def test_main_help_runs() -> None:
@@ -18,16 +25,6 @@ def test_main_version_prints_package_version() -> None:
     result = runner.invoke(main, ["--version"])
     assert result.exit_code == 0
     assert __version__ in result.output
-
-
-import json
-from pathlib import Path
-from unittest.mock import MagicMock
-
-import pytest
-from pytest_mock import MockerFixture
-
-from ttp_staleness.models import AttackIndex, Finding, Report, Rule
 
 
 @pytest.fixture
