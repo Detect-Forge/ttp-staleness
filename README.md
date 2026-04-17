@@ -8,7 +8,7 @@ Score your Sigma/KQL/EQL detection rules for ATT&CK technique staleness.
 
 ## Requirements
 
-- Python **3.11** or newer (tested on 3.12)
+- Python **3.12** or newer
 
 ## Install
 
