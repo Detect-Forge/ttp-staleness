@@ -20,6 +20,11 @@ dependencies = [
     "jinja2>=3.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Detect-Forge/ttp-staleness"
+Repository = "https://github.com/Detect-Forge/ttp-staleness"
+Issues = "https://github.com/Detect-Forge/ttp-staleness/issues"
+
 [project.scripts]
 ttp-staleness = "ttp_staleness.cli:main"
 
