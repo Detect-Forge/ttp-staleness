@@ -1,29 +1,60 @@
 from __future__ import annotations
 
+import json
+import os
+import time
 from pathlib import Path
 
-from ttp_staleness.cache import DiskCache
+from ttp_staleness.cache import (
+    DEFAULT_CACHE_DIR,
+    DEFAULT_TTL_HOURS,
+    cache_path,
+    is_cache_valid,
+    read_cache,
+    write_cache,
+)
 
 
-def test_get_returns_none_for_missing(tmp_path: Path) -> None:
-    cache = DiskCache(root=tmp_path, ttl_hours=24)
-    assert cache.get("nope") is None
+def test_defaults_match_spec() -> None:
+    assert Path.home() / ".cache" / "ttp-staleness" == DEFAULT_CACHE_DIR
+    assert DEFAULT_TTL_HOURS == 24
 
 
-def test_set_then_get_returns_bytes(tmp_path: Path) -> None:
-    cache = DiskCache(root=tmp_path, ttl_hours=24)
-    cache.set("k", b"payload")
-    assert cache.get("k") == b"payload"
+def test_cache_path_creates_directory_and_returns_filename(tmp_path: Path) -> None:
+    nested = tmp_path / "subdir" / "deeper"
+    p = cache_path("enterprise-attack", nested)
+    assert nested.exists()
+    assert p == nested / "enterprise-attack.json"
 
 
-def test_ttl_zero_bypasses_cache(tmp_path: Path) -> None:
-    cache = DiskCache(root=tmp_path, ttl_hours=0)
-    cache.set("k", b"payload")
-    assert cache.get("k") is None
+def test_is_cache_valid_false_when_missing(tmp_path: Path) -> None:
+    assert is_cache_valid(tmp_path / "nope.json", ttl_hours=24) is False
 
 
-def test_clear_removes_entries(tmp_path: Path) -> None:
-    cache = DiskCache(root=tmp_path, ttl_hours=24)
-    cache.set("k", b"payload")
-    cache.clear()
-    assert cache.get("k") is None
+def test_is_cache_valid_true_for_fresh_file(tmp_path: Path) -> None:
+    p = tmp_path / "fresh.json"
+    p.write_text("{}", encoding="utf-8")
+    assert is_cache_valid(p, ttl_hours=24) is True
+
+
+def test_is_cache_valid_false_when_ttl_zero(tmp_path: Path) -> None:
+    p = tmp_path / "fresh.json"
+    p.write_text("{}", encoding="utf-8")
+    assert is_cache_valid(p, ttl_hours=0) is False
+
+
+def test_is_cache_valid_false_when_file_older_than_ttl(tmp_path: Path) -> None:
+    p = tmp_path / "old.json"
+    p.write_text("{}", encoding="utf-8")
+    two_hours_ago = time.time() - 2 * 3600
+    os.utime(p, (two_hours_ago, two_hours_ago))
+    assert is_cache_valid(p, ttl_hours=1) is False
+
+
+def test_write_cache_and_read_cache_roundtrip(tmp_path: Path) -> None:
+    p = tmp_path / "data.json"
+    payload = {"hello": "world", "nested": {"n": 1}}
+    write_cache(p, payload)
+    assert p.exists()
+    assert read_cache(p) == payload
+    assert json.loads(p.read_text(encoding="utf-8")) == payload

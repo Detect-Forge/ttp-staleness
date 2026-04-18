@@ -1,41 +1,41 @@
 from __future__ import annotations
 
-import hashlib
-import time
+import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
+
+DEFAULT_CACHE_DIR = Path.home() / ".cache" / "ttp-staleness"
+DEFAULT_TTL_HOURS = 24
 
 
-class DiskCache:
-    """Minimal filesystem cache. TTL is enforced on read.
+def cache_path(domain: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Path:
+    """Return the filesystem path for a given ATT&CK domain's cached STIX bundle.
 
-    Stub for the scaffold: real implementation will grow compression, namespacing,
-    and locking. Interface is stable.
+    Ensures the cache directory exists.
     """
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / f"{domain}.json"
 
-    def __init__(self, root: Path, ttl_hours: int) -> None:
-        self.root = root
-        self.ttl_seconds = ttl_hours * 3600
-        self.root.mkdir(parents=True, exist_ok=True)
 
-    def _path_for(self, key: str) -> Path:
-        digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
-        return self.root / digest
+def is_cache_valid(path: Path, ttl_hours: int = DEFAULT_TTL_HOURS) -> bool:
+    """Return True iff the file exists and is younger than ttl_hours.
 
-    def get(self, key: str) -> bytes | None:
-        if self.ttl_seconds <= 0:
-            return None
-        p = self._path_for(key)
-        if not p.exists():
-            return None
-        age = time.time() - p.stat().st_mtime
-        if age > self.ttl_seconds:
-            return None
-        return p.read_bytes()
+    `ttl_hours=0` always returns False (cache bypass).
+    """
+    if ttl_hours <= 0 or not path.exists():
+        return False
+    age = datetime.now(UTC) - datetime.fromtimestamp(
+        path.stat().st_mtime, tz=UTC
+    )
+    return age < timedelta(hours=ttl_hours)
 
-    def set(self, key: str, value: bytes) -> None:
-        self._path_for(key).write_bytes(value)
 
-    def clear(self) -> None:
-        for child in self.root.iterdir():
-            if child.is_file():
-                child.unlink()
+def read_cache(path: Path) -> dict[str, Any]:
+    """Read and parse a cached JSON file."""
+    return dict(json.loads(path.read_text(encoding="utf-8")))
+
+
+def write_cache(path: Path, data: dict[str, Any]) -> None:
+    """Write a dict to disk as JSON."""
+    path.write_text(json.dumps(data), encoding="utf-8")
