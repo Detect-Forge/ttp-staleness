@@ -35,7 +35,7 @@ def test_report_summary_counts_and_has_severity() -> None:
     assert report.summary.attack_domain == "enterprise-attack"
 
 
-TODAY = date.today()
+TODAY = datetime.now(UTC).date()
 
 
 def _make_technique(
@@ -183,3 +183,19 @@ def test_mixed_deprecated_and_stale_pairs_correctly() -> None:
     assert score.worst_severity == "high"
     # worst_days_stale is 0 (from the deprecated finding), NOT 100
     assert score.worst_days_stale == 0
+
+
+def test_summary_counts_deprecated_rule_in_rules_with_findings() -> None:
+    """A rule referencing a deprecated technique must show up in the summary's
+    rules_with_findings counter, even though worst_days_stale=0.
+
+    Guards against the previous condition `s.worst_days_stale > 0 or not s.has_attack_tags`
+    which silently excluded deprecated-only and unknown-only findings.
+    """
+    deprecated_rule = _make_rule(["T1086"], rule_date=TODAY)
+    index = _make_index_with(_make_technique("T1086", deprecated=True))
+
+    report = score_rules([deprecated_rule], index)
+    assert report.summary.total_rules == 1
+    assert report.summary.rules_with_findings == 1
+    assert report.summary.deprecated_techniques == 1

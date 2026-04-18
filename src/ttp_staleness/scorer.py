@@ -104,11 +104,6 @@ def _score_technique(
     )
 
 
-def _worst_severity(findings: list[TechniqueFinding]) -> SeverityLevel:
-    if not findings:
-        return "info"
-    return max(findings, key=lambda f: _SEVERITY_ORDER[f.severity]).severity
-
 
 def score_rule(rule: SigmaRule, index: AttackIndex) -> RuleScore:
     effective_date = rule.modified_date or rule.rule_date
@@ -165,7 +160,7 @@ def score_rules(rules: list[SigmaRule], index: AttackIndex) -> StalenessReport:
     summary = ReportSummary(
         total_rules=len(rules),
         rules_with_findings=sum(
-            1 for s in scores if s.worst_days_stale > 0 or not s.has_attack_tags
+            1 for s in scores if s.worst_severity != "low" or not s.has_attack_tags
         ),
         critical=_count("critical"),
         high=_count("high"),
