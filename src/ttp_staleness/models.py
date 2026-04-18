@@ -6,8 +6,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-Severity = Literal["low", "medium", "high", "critical"]
-
 
 class AttackTechnique(BaseModel):
     """A single ATT&CK technique or sub-technique with its staleness-relevant metadata."""
@@ -29,26 +27,6 @@ class AttackIndex(BaseModel):
     # TODO: populated from x-mitre-collection identity object in a future task.
     attack_version: str | None = None
     source_domain: str = "enterprise-attack"
-
-
-class Rule(BaseModel):
-    id: str
-    title: str
-    path: Path | None = None
-    techniques: list[str] = Field(default_factory=list)
-
-
-class Finding(BaseModel):
-    rule: Rule
-    severity: Severity
-    reason: str
-
-
-class Report(BaseModel):
-    findings: list[Finding] = Field(default_factory=list)
-
-    def has_severity(self, level: Severity) -> bool:
-        return any(f.severity == level for f in self.findings)
 
 
 class SigmaRule(BaseModel):
