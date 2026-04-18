@@ -102,3 +102,59 @@ def test_parse_rule_dir_finds_all_valid_rules() -> None:
 def test_parse_rule_dir_empty_dir(tmp_path: Path) -> None:
     rules = parse_rule_dir(tmp_path)
     assert rules == []
+
+
+def test_parse_sigma_date_none() -> None:
+    from ttp_staleness.rule_parser import _parse_sigma_date
+
+    assert _parse_sigma_date(None) is None
+
+
+def test_parse_sigma_date_date_instance() -> None:
+    from datetime import date as _date
+
+    from ttp_staleness.rule_parser import _parse_sigma_date
+
+    d = _date(2024, 3, 15)
+    assert _parse_sigma_date(d) is d
+
+
+def test_parse_sigma_date_datetime_instance_downconverts() -> None:
+    from datetime import date as _date
+    from datetime import datetime as _datetime
+
+    from ttp_staleness.rule_parser import _parse_sigma_date
+
+    dt = _datetime(2024, 3, 15, 12, 0, 0)
+    result = _parse_sigma_date(dt)
+    assert result == _date(2024, 3, 15)
+    assert type(result) is _date
+
+
+def test_parse_sigma_date_slash_string() -> None:
+    from datetime import date as _date
+
+    from ttp_staleness.rule_parser import _parse_sigma_date
+
+    assert _parse_sigma_date("2024/03/15") == _date(2024, 3, 15)
+
+
+def test_parse_sigma_date_dash_string() -> None:
+    from datetime import date as _date
+
+    from ttp_staleness.rule_parser import _parse_sigma_date
+
+    assert _parse_sigma_date("2024-03-15") == _date(2024, 3, 15)
+
+
+def test_parse_sigma_date_unparseable_returns_none() -> None:
+    from ttp_staleness.rule_parser import _parse_sigma_date
+
+    assert _parse_sigma_date("not a date") is None
+    assert _parse_sigma_date("99-99-99") is None  # invalid month/day — can't parse
+
+
+def test_extract_ignores_non_string_tags() -> None:
+    # YAML can yield ints for malformed tags (e.g., `- 2021-44228` becomes int arithmetic).
+    # Must not crash; must skip non-strings silently.
+    assert _extract_technique_ids(["attack.t1059", -42223, None, True]) == ["T1059"]

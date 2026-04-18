@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import date
+from collections.abc import Sequence
+from datetime import date, datetime
 from pathlib import Path
 
 import yaml
@@ -16,14 +17,18 @@ log = logging.getLogger(__name__)
 _TECHNIQUE_PATTERN = re.compile(r"^attack\.(t\d{4}(?:\.\d{3})?)$", re.IGNORECASE)
 
 
-def _extract_technique_ids(tags: list[str]) -> list[str]:
+def _extract_technique_ids(tags: Sequence[object]) -> list[str]:
     """Return normalised ATT&CK technique IDs from a Sigma tags list.
 
-    Skips tactics, groups, software refs, and non-ATT&CK namespaces. The output
-    is uppercase dot-notation (e.g. "T1059.001") preserving source order.
+    Skips tactics, groups, software refs, non-ATT&CK namespaces, and any
+    non-string values (YAML can yield ints or bools for malformed tags).
+    The output is uppercase dot-notation (e.g. "T1059.001") preserving
+    source order.
     """
     ids: list[str] = []
     for tag in tags:
+        if not isinstance(tag, str):
+            continue
         m = _TECHNIQUE_PATTERN.match(tag.strip())
         if m:
             ids.append(m.group(1).upper())
@@ -35,13 +40,17 @@ def _parse_sigma_date(value: object) -> date | None:
 
     Accepts:
     - ``None`` → ``None``
-    - a ``datetime.date`` (PyYAML auto-parses ISO-formatted dates) → returned as-is
+    - a ``datetime.datetime`` (PyYAML auto-parses ISO timestamps) → its ``.date()``
+    - a ``datetime.date`` (PyYAML auto-parses ISO dates) → returned as-is
     - a string in ``YYYY/MM/DD`` or ``YYYY-MM-DD`` form → parsed via ``date.fromisoformat``
 
     Returns ``None`` for anything unparseable (logged at DEBUG).
     """
     if value is None:
         return None
+    if isinstance(value, datetime):
+        # datetime is a subclass of date — this branch must run FIRST.
+        return value.date()
     if isinstance(value, date):
         return value
     text = str(value).strip().replace("/", "-")
