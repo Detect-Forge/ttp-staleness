@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ttp_staleness.rule_parser import _extract_technique_ids, parse_rule_file
+from ttp_staleness.rule_parser import (
+    _extract_technique_ids,
+    parse_rule_dir,
+    parse_rule_file,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sigma"
 
@@ -80,3 +84,21 @@ def test_parse_date_slash_format() -> None:
 def test_non_dict_yaml_returns_none() -> None:
     rule = parse_rule_file(FIXTURES / "not_a_sigma_rule.yml")
     assert rule is None
+
+
+def test_parse_rule_dir_finds_all_valid_rules() -> None:
+    rules = parse_rule_dir(FIXTURES)
+    titles = {r.title for r in rules}
+    assert "PowerShell Encoded Command" in titles
+    assert "Suspicious PowerShell" in titles
+    assert "Vendor Rule No ATT&CK" in titles
+    assert "Bare Rule" in titles
+    assert "Credential Dumping" in titles
+    assert "Old Deprecated Rule" in titles
+    # not_a_sigma_rule.yml is a YAML list, correctly skipped
+    assert len(rules) == 6
+
+
+def test_parse_rule_dir_empty_dir(tmp_path: Path) -> None:
+    rules = parse_rule_dir(tmp_path)
+    assert rules == []

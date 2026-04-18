@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from .models import Rule, SigmaRule
+from .models import SigmaRule
 
 log = logging.getLogger(__name__)
 
@@ -87,11 +87,27 @@ def parse_rule_file(path: Path) -> SigmaRule | None:
         return None
 
 
-def parse_rule_dir(rule_dir: Path) -> list[Rule]:
-    """Parse every Sigma rule under rule_dir.
+def parse_rule_dir(
+    rule_dir: Path,
+    glob: str = "**/*.yml",
+) -> list[SigmaRule]:
+    """Recursively find and parse Sigma rule YAML files in ``rule_dir``.
 
-    Stub: real implementation lands in Task 5. The return type changes to
-    ``list[SigmaRule]`` at that point (together with the scorer signature).
+    Files that fail parsing (bad YAML, non-dict content, validation errors)
+    are silently skipped with a warning log. Returns an empty list if no
+    valid rules are found.
+
+    The default glob only matches ``.yml``; repos that use ``.yaml`` must pass
+    ``glob="**/*.yaml"`` explicitly.
     """
-    _ = rule_dir
-    return []
+    rules: list[SigmaRule] = []
+    found = list(rule_dir.glob(glob))
+    log.info("Found %d YAML files in %s", len(found), rule_dir)
+
+    for path in found:
+        rule = parse_rule_file(path)
+        if rule is not None:
+            rules.append(rule)
+
+    log.info("Successfully parsed %d / %d rules", len(rules), len(found))
+    return rules
