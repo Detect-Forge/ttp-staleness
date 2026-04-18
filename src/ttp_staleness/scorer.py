@@ -5,10 +5,11 @@ from datetime import UTC, date, datetime
 
 from .models import (
     AttackIndex,
-    Report,
+    ReportSummary,
     RuleScore,
     SeverityLevel,
     SigmaRule,
+    StalenessReport,
     TechniqueFinding,
 )
 
@@ -146,12 +147,40 @@ def score_rule(rule: SigmaRule, index: AttackIndex) -> RuleScore:
     )
 
 
-# score_rules remains the stub — Task 3 replaces it.
-def score_rules(rules: list[SigmaRule], index: AttackIndex) -> Report:
+def score_rules(rules: list[SigmaRule], index: AttackIndex) -> StalenessReport:
     """Score rules against an ATT&CK index.
 
-    Stub: the full implementation lands in Task 3. Kept as-is for this task so
-    the CLI/reporter contract stays intact.
+    Returns a StalenessReport with scores sorted worst-first.
     """
-    _ = (rules, index)
-    return Report(findings=[])
+    scores = [score_rule(r, index) for r in rules]
+
+    scores.sort(
+        key=lambda s: (_SEVERITY_ORDER[s.worst_severity], s.worst_days_stale),
+        reverse=True,
+    )
+
+    def _count(sev: SeverityLevel) -> int:
+        return sum(1 for s in scores if s.worst_severity == sev)
+
+    summary = ReportSummary(
+        total_rules=len(rules),
+        rules_with_findings=sum(
+            1 for s in scores if s.worst_days_stale > 0 or not s.has_attack_tags
+        ),
+        critical=_count("critical"),
+        high=_count("high"),
+        medium=_count("medium"),
+        low=_count("low"),
+        no_attack_tags=sum(1 for s in scores if not s.has_attack_tags),
+        unknown_techniques=sum(
+            1 for s in scores for f in s.findings if f.kind == "unknown_technique"
+        ),
+        deprecated_techniques=sum(
+            1 for s in scores for f in s.findings if f.kind == "deprecated_technique"
+        ),
+        generated_at=datetime.now(UTC),
+        attack_domain=index.source_domain,
+        attack_fetched_at=index.fetched_at,
+    )
+
+    return StalenessReport(summary=summary, scores=scores)

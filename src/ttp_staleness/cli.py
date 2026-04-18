@@ -89,7 +89,11 @@ def scan(
         report = scorer.score_rules(rules, index)
         progress.remove_task(t3)
 
-    rendered = reporter.render(report, output_format=output_format, min_severity=min_severity)  # type: ignore[arg-type]
+    rendered = reporter.render(
+        report,
+        output_format=output_format,
+        min_severity=min_severity,  # type: ignore[arg-type]
+    )
 
     if output:
         output.write_text(rendered, encoding="utf-8")

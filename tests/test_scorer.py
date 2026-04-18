@@ -4,19 +4,35 @@ from pathlib import Path
 from ttp_staleness.models import (
     AttackIndex,
     AttackTechnique,
-    Report,
     RuleScore,
     SigmaRule,
+    StalenessReport,
 )
 from ttp_staleness.scorer import score_rule, score_rules
 
 
-def test_empty_inputs_yield_empty_report() -> None:
-    index = AttackIndex(fetched_at=datetime(2026, 1, 1, tzinfo=UTC))
-    report = score_rules(rules=[], index=index)
-    assert isinstance(report, Report)
-    assert report.findings == []
-    assert report.has_severity("critical") is False
+def test_score_rules_sorted_worst_first() -> None:
+    stale_rule = _make_rule(["T1059"], rule_date=TODAY - timedelta(days=500))
+    current_rule = _make_rule(["T1059"], rule_date=TODAY)
+    index = _make_index_with(_make_technique("T1059", days_ago=400))
+    # Pass in wrong order — scorer should sort worst-first.
+    report = score_rules([current_rule, stale_rule], index)
+    assert isinstance(report, StalenessReport)
+    assert len(report.scores) == 2
+    assert report.scores[0].worst_days_stale > report.scores[1].worst_days_stale
+
+
+def test_report_summary_counts_and_has_severity() -> None:
+    stale_rule = _make_rule(["T1059"], rule_date=TODAY - timedelta(days=500))
+    bare_rule = _make_rule([])
+    index = _make_index_with(_make_technique("T1059", days_ago=400))
+
+    report = score_rules([stale_rule, bare_rule], index)
+    assert report.summary.total_rules == 2
+    assert report.summary.no_attack_tags == 1
+    assert report.summary.critical >= 1
+    assert report.has_severity("critical") is True
+    assert report.summary.attack_domain == "enterprise-attack"
 
 
 TODAY = date.today()

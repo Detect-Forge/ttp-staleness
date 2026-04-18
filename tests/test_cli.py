@@ -11,9 +11,35 @@ from pytest_mock import MockerFixture
 
 from ttp_staleness import __version__
 from ttp_staleness.cli import main
-from ttp_staleness.models import AttackIndex, Finding, Report, Rule
+from ttp_staleness.models import (
+    AttackIndex,
+    ReportSummary,
+    RuleScore,
+    StalenessReport,
+)
 
 _EMPTY_INDEX = AttackIndex(fetched_at=datetime(2026, 1, 1, tzinfo=UTC))
+
+
+def _empty_report() -> StalenessReport:
+    summary = ReportSummary(
+        total_rules=0,
+        rules_with_findings=0,
+        critical=0,
+        high=0,
+        medium=0,
+        low=0,
+        no_attack_tags=0,
+        unknown_techniques=0,
+        deprecated_techniques=0,
+        generated_at=datetime(2026, 1, 1, tzinfo=UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    return StalenessReport(summary=summary, scores=[])
+
+
+_EMPTY_REPORT = _empty_report()
 
 
 def test_main_help_runs() -> None:
@@ -41,7 +67,7 @@ def patched_pipeline(mocker: MockerFixture) -> dict[str, MagicMock]:
             "ttp_staleness.rule_parser.parse_rule_dir", return_value=[]
         ),
         "score_rules": mocker.patch(
-            "ttp_staleness.scorer.score_rules", return_value=Report(findings=[])
+            "ttp_staleness.scorer.score_rules", return_value=_EMPTY_REPORT
         ),
     }
 
@@ -74,7 +100,8 @@ def test_scan_json_output_to_stdout(
     result = runner.invoke(main, ["scan", str(empty_rule_dir), "--format", "json"])
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
-    assert payload["findings"] == []
+    assert payload["scores"] == []
+    assert payload["summary"]["total_rules"] == 0
 
 
 def test_scan_no_cache_sets_ttl_zero(
@@ -112,18 +139,44 @@ def test_scan_writes_file_when_output_given(
     assert result.exit_code == 0
     assert out.exists()
     payload = json.loads(out.read_text())
-    assert payload["findings"] == []
+    assert payload["scores"] == []
     assert result.stdout == ""
 
 
 def test_scan_exits_1_when_critical_finding(
     empty_rule_dir: Path, mocker: MockerFixture
 ) -> None:
-    rule = Rule(id="r1", title="t1")
-    critical = Report(findings=[Finding(rule=rule, severity="critical", reason="x")])
-    mocker.patch("ttp_staleness.attack_client.build_index", return_value=_EMPTY_INDEX)
+    critical_score = RuleScore(
+        rule_id="r1",
+        title="t1",
+        source_file=Path("/fake/r1.yml"),
+        status="stable",
+        findings=[],
+        worst_severity="critical",
+        worst_days_stale=400,
+        has_attack_tags=True,
+    )
+    summary = ReportSummary(
+        total_rules=1,
+        rules_with_findings=1,
+        critical=1,
+        high=0,
+        medium=0,
+        low=0,
+        no_attack_tags=0,
+        unknown_techniques=0,
+        deprecated_techniques=0,
+        generated_at=datetime(2026, 1, 1, tzinfo=UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    critical_report = StalenessReport(summary=summary, scores=[critical_score])
+
+    mocker.patch(
+        "ttp_staleness.attack_client.build_index", return_value=_EMPTY_INDEX
+    )
     mocker.patch("ttp_staleness.rule_parser.parse_rule_dir", return_value=[])
-    mocker.patch("ttp_staleness.scorer.score_rules", return_value=critical)
+    mocker.patch("ttp_staleness.scorer.score_rules", return_value=critical_report)
 
     runner = CliRunner()
     result = runner.invoke(main, ["scan", str(empty_rule_dir)])

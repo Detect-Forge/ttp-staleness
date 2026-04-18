@@ -1,23 +1,30 @@
 from __future__ import annotations
 
-from .models import Report, Severity
+from .models import SeverityLevel, StalenessReport
 
 
-def render(report: Report, output_format: str, min_severity: Severity) -> str:
-    """Render a Report to the requested format.
+def render(
+    report: StalenessReport,
+    output_format: str,
+    min_severity: SeverityLevel,
+) -> str:
+    """Render a StalenessReport to the requested format.
 
-    Stub: real implementation will filter by min_severity, colourize terminal
-    output, and use Jinja for HTML. For now returns minimal valid output so
-    the CLI end-to-end path works.
+    Stub: real implementation will filter by min_severity and produce
+    rich/html output. For now returns minimal valid output so the CLI
+    end-to-end path works.
     """
     _ = min_severity
     if output_format == "terminal":
-        return f"ttp-staleness scorecard\n{len(report.findings)} findings\n"
+        return (
+            "ttp-staleness scorecard\n"
+            f"{len(report.scores)} scored rules\n"
+        )
     if output_format == "json":
         return report.model_dump_json(indent=2)
     if output_format == "html":
         return (
             "<!doctype html><html><head><title>ttp-staleness</title></head>"
-            f"<body><p>{len(report.findings)} findings</p></body></html>"
+            f"<body><p>{len(report.scores)} scored rules</p></body></html>"
         )
     raise ValueError(f"unknown output_format: {output_format!r}")
