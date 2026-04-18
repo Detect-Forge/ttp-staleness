@@ -1,15 +1,36 @@
-from pathlib import Path
+from __future__ import annotations
 
-from ttp_staleness.models import Rule
-from ttp_staleness.rule_parser import parse_rule_dir
-
-
-def test_empty_dir_yields_empty_list(empty_rule_dir: Path) -> None:
-    rules = parse_rule_dir(empty_rule_dir)
-    assert rules == []
+from ttp_staleness.rule_parser import _extract_technique_ids
 
 
-def test_return_type_is_list_of_rules(empty_rule_dir: Path) -> None:
-    rules = parse_rule_dir(empty_rule_dir)
-    assert isinstance(rules, list)
-    assert all(isinstance(r, Rule) for r in rules)
+def test_extracts_subtechnique() -> None:
+    assert _extract_technique_ids(["attack.t1059.001"]) == ["T1059.001"]
+
+
+def test_extracts_parent_technique() -> None:
+    assert _extract_technique_ids(["attack.t1059"]) == ["T1059"]
+
+
+def test_skips_tactic() -> None:
+    assert _extract_technique_ids(["attack.execution"]) == []
+
+
+def test_skips_group_ref() -> None:
+    assert _extract_technique_ids(["attack.g0016"]) == []
+
+
+def test_skips_software_ref() -> None:
+    assert _extract_technique_ids(["attack.s0002"]) == []
+
+
+def test_skips_non_attack_namespace() -> None:
+    assert _extract_technique_ids(["cve.2021-44228"]) == []
+
+
+def test_normalises_to_uppercase() -> None:
+    assert _extract_technique_ids(["attack.T1059.001"]) == ["T1059.001"]
+
+
+def test_multiple_tags_mixed() -> None:
+    tags = ["attack.execution", "attack.t1059", "attack.t1059.001", "cve.2020-1234"]
+    assert _extract_technique_ids(tags) == ["T1059", "T1059.001"]
