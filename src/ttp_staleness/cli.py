@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from .console import console, err_console
+from .console import err_console
 from .settings import settings
 
 
@@ -99,10 +99,12 @@ def scan(
         output.write_text(rendered, encoding="utf-8")
         err_console.print(f"[info]Report written to {output}[/info]")
     else:
-        if output_format == "terminal":
-            console.print(rendered)
-        else:
-            click.echo(rendered, nl=False)
+        # For terminal format the rendered string already contains ANSI escape
+        # codes (force_terminal=True in reporter). Pass color=True so click
+        # does not strip them even when stdout is not a TTY (e.g. piped to
+        # less -R or hexdump). JSON and HTML have no ANSI codes so color=True
+        # is harmless for those formats.
+        click.echo(rendered, nl=False, color=output_format == "terminal")
 
     if report.has_severity("critical"):
         sys.exit(1)

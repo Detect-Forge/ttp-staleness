@@ -120,3 +120,16 @@ def test_terminal_filters_by_min_severity(sample_report) -> None:
     # Below-threshold rules must not appear in the table.
     assert "Medium Test Rule" not in out
     assert "Low Test Rule" not in out
+
+
+def test_html_renders_unicode_em_dash_not_entity_reference(sample_report) -> None:
+    """Regression: with autoescape=True, a literal `&mdash;` string becomes
+    `&amp;mdash;` in output (browsers render the literal text). Use the
+    Unicode em-dash character instead so it passes through unchanged.
+    """
+    out = render(sample_report, output_format="html", min_severity="low")
+    # The double-escaped form must NOT appear.
+    assert "&amp;mdash;" not in out
+    # The current Rule (low severity, days_stale=0, kind=current) should
+    # display an em-dash in the Days Stale column.
+    assert "—" in out  # U+2014

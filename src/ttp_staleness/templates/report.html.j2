@@ -31,7 +31,7 @@
 </style>
 </head>
 <body>
-<h1>🕵️ TTP Staleness Report</h1>
+<h1>TTP Staleness Report</h1>
 <div class="summary">
   <div class="stat"><div class="value">{{ summary.total_rules }}</div><div class="label">Rules Scanned</div></div>
   <div class="stat"><div class="value critical">{{ summary.critical }}</div><div class="label">Critical</div></div>
@@ -58,9 +58,9 @@
   <td><span class="badge badge-{{ finding.severity }}">{{ finding.severity.upper() }}</span></td>
   <td title="{{ score.title }}">{{ score.title[:60] }}</td>
   <td>{{ finding.technique_id }}{% if finding.technique_name %} &mdash; {{ finding.technique_name[:30] }}{% endif %}</td>
-  <td>{{ finding.days_stale or '&mdash;' }}</td>
-  <td>{{ finding.rule_effective_date or '&mdash;' }}</td>
-  <td>{{ finding.technique_modified.date() if finding.technique_modified else '&mdash;' }}</td>
+  <td>{{ finding.days_stale or '—' }}</td>
+  <td>{{ finding.rule_effective_date or '—' }}</td>
+  <td>{{ finding.technique_modified.date() if finding.technique_modified else '—' }}</td>
   <td title="{{ score.source_file }}">{{ score.source_file.name }}</td>
 </tr>
 {% endfor %}

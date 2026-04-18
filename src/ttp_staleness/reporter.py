@@ -37,7 +37,13 @@ def _render_terminal(report: StalenessReport, min_severity: str) -> str:
     """Render a Rich summary panel + findings table to a string."""
     threshold = _SEVERITY_RANK[min_severity]
     buf = StringIO()
-    console = Console(file=buf, highlight=False, width=120, theme=theme)
+    console = Console(
+        file=buf,
+        force_terminal=True,
+        highlight=False,
+        width=120,
+        theme=theme,
+    )
 
     s = report.summary
     summary_text = (
