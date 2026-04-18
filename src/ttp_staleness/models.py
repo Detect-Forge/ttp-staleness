@@ -62,3 +62,62 @@ class SigmaRule(BaseModel):
     technique_ids: list[str] = Field(default_factory=list)
     source_file: Path
     raw_tags: list[str] = Field(default_factory=list)
+
+
+SeverityLevel = Literal["critical", "high", "medium", "low", "info"]
+FindingKind = Literal[
+    "stale",
+    "current",
+    "no_attack_tags",
+    "no_rule_date",
+    "deprecated_technique",
+    "unknown_technique",
+]
+
+
+class TechniqueFinding(BaseModel):
+    """Staleness result for one technique referenced by one rule."""
+
+    technique_id: str
+    technique_name: str | None = None
+    technique_modified: datetime | None = None
+    rule_effective_date: date | None = None
+    days_stale: int
+    severity: SeverityLevel
+    kind: FindingKind
+
+
+class RuleScore(BaseModel):
+    """Aggregated staleness score for a single Sigma rule."""
+
+    rule_id: str | None = None
+    title: str
+    source_file: Path
+    status: str | None = None
+    findings: list[TechniqueFinding] = Field(default_factory=list)
+    worst_severity: SeverityLevel
+    worst_days_stale: int
+    has_attack_tags: bool
+
+
+class ReportSummary(BaseModel):
+    total_rules: int
+    rules_with_findings: int
+    critical: int
+    high: int
+    medium: int
+    low: int
+    no_attack_tags: int
+    unknown_techniques: int
+    deprecated_techniques: int
+    generated_at: datetime
+    attack_domain: str
+    attack_fetched_at: datetime
+
+
+class StalenessReport(BaseModel):
+    summary: ReportSummary
+    scores: list[RuleScore] = Field(default_factory=list)
+
+    def has_severity(self, level: SeverityLevel) -> bool:
+        return any(s.worst_severity == level for s in self.scores)
