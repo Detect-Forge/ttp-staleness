@@ -50,3 +50,29 @@ def test_html_render_contains_html_tag() -> None:
 def test_unknown_format_raises() -> None:
     with pytest.raises(ValueError):
         render(_empty_report(), output_format="xml", min_severity="low")
+
+
+def test_filter_scores_drops_below_threshold(sample_report) -> None:
+    from ttp_staleness.reporter import _filter_scores
+
+    filtered = _filter_scores(sample_report, "high")
+    severities = {s.worst_severity for s in filtered.scores}
+    assert severities <= {"critical", "high"}
+    # The original report is not mutated.
+    assert len(sample_report.scores) == 5
+
+
+def test_filter_scores_info_threshold_keeps_all(sample_report) -> None:
+    from ttp_staleness.reporter import _filter_scores
+
+    filtered = _filter_scores(sample_report, "info")
+    assert len(filtered.scores) == len(sample_report.scores)
+
+
+def test_filter_scores_raises_on_unknown_level(sample_report) -> None:
+    import pytest
+
+    from ttp_staleness.reporter import _filter_scores
+
+    with pytest.raises(KeyError):
+        _filter_scores(sample_report, "extreme")

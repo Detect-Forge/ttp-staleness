@@ -92,7 +92,7 @@ def scan(
     rendered = reporter.render(
         report,
         output_format=output_format,
-        min_severity=min_severity,  # type: ignore[arg-type]
+        min_severity=min_severity,
     )
 
     if output:
