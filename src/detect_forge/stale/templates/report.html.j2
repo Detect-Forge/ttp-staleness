@@ -28,6 +28,19 @@
   .badge-medium { background: #744210; color: #f6e05e; }
   .badge-low { background: #1c4532; color: #68d391; }
   .badge-info { background: #2d3748; color: #a0aec0; }
+  .proposals { margin-top: 2rem; }
+  .proposals h2 { margin-bottom: 1rem; }
+  .proposal { background: #1e2333; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid #f6e05e; }
+  .proposal-head { display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .proposal-head .filename { font-weight: bold; color: #e2e8f0; }
+  .conf-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+  .conf-high { background: #1c4532; color: #68d391; }
+  .conf-mid  { background: #744210; color: #f6e05e; }
+  .conf-low  { background: #742a2a; color: #fc8181; }
+  .changed-fields { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .changed-fields .tag { background: #2d3748; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; color: #a0aec0; }
+  .proposal-explanation { color: #cbd5e0; margin: 0.75rem 0; }
+  .proposal pre { background: #0f1117; padding: 1rem; border-radius: 4px; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -70,6 +83,35 @@
 {% endfor %}
 </tbody>
 </table>
+{% set has_proposals = scores | selectattr('proposals') | sum(start=[], attribute='proposals') | list | length > 0 %}
+{% if has_proposals %}
+<section class="proposals">
+  <h2>LLM Proposals</h2>
+{% for score in scores %}
+{% for proposal in score.proposals %}
+  <div class="proposal">
+    <div class="proposal-head">
+      <span class="filename">{{ score.title }} — {{ score.source_file.name }}</span>
+      {% if proposal.confidence >= 0.80 %}
+        <span class="conf-badge conf-high">Confidence {{ '%.2f' % proposal.confidence }}</span>
+      {% elif proposal.confidence >= 0.60 %}
+        <span class="conf-badge conf-mid">Confidence {{ '%.2f' % proposal.confidence }}</span>
+      {% else %}
+        <span class="conf-badge conf-low">Confidence {{ '%.2f' % proposal.confidence }}</span>
+      {% endif %}
+      {% if proposal.changed_fields %}
+      <div class="changed-fields">
+        {% for field in proposal.changed_fields %}<span class="tag">{{ field }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <p class="proposal-explanation">{{ proposal.explanation }}</p>
+    <pre><code class="language-{% if score.source_file.suffix == '.toml' %}toml{% else %}yaml{% endif %}">{{ proposal.proposed_rule }}</code></pre>
+  </div>
+{% endfor %}
+{% endfor %}
+</section>
+{% endif %}
 <script>
 function sortTable(col) {
   const table = document.getElementById("results");

@@ -405,3 +405,58 @@ def test_terminal_proposal_rendered_when_score_meets_min_severity() -> None:
     output = render(report, output_format="terminal", min_severity="high")
     assert "High Severity Rewrite" in output
     assert "LLM Diff Proposal" in output
+
+
+def test_html_report_renders_proposals_section_when_present() -> None:
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from detect_forge.stale.models import (
+        DiffProposal,
+        ReportSummary,
+        RuleScore,
+        StalenessReport,
+    )
+    from detect_forge.stale.reporter import render
+
+    proposal = DiffProposal(
+        proposed_rule="title: rewritten\n",
+        explanation="Updated for current scope.",
+        changed_fields=["description", "tags"],
+        confidence=0.84,
+    )
+    score = RuleScore(
+        rule_id="r1",
+        title="Rule With Proposal",
+        source_file=Path("/rules/r.yml"),
+        status="stable",
+        findings=[],
+        worst_severity="medium",
+        worst_days_stale=0,
+        has_attack_tags=True,
+        proposals=[proposal],
+    )
+    summary = ReportSummary(
+        total_rules=1, rules_with_findings=1,
+        critical=0, high=0, medium=1, low=0,
+        no_attack_tags=0, unknown_techniques=0,
+        deprecated_techniques=0, revoked_techniques=0,
+        generated_at=datetime.now(UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime.now(UTC),
+    )
+    report = StalenessReport(summary=summary, scores=[score])
+
+    output = render(report, output_format="html", min_severity="info")
+    assert "LLM Proposals" in output
+    assert "Rule With Proposal" in output or "/rules/r.yml" in output
+    assert "0.84" in output
+    assert "description" in output
+
+
+def test_html_report_omits_proposals_section_when_empty(sample_report) -> None:
+    """No proposals → no LLM Proposals section."""
+    from detect_forge.stale.reporter import render
+
+    output = render(sample_report, output_format="html", min_severity="info")
+    assert "LLM Proposals" not in output
