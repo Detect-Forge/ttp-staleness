@@ -8,8 +8,8 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
+from ._dates import _parse_rule_date
 from .models import DetectionRule
-from .rule_parser import _parse_rule_date
 
 log = logging.getLogger(__name__)
 

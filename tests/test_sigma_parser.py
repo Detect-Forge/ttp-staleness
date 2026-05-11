@@ -105,7 +105,7 @@ def test_parse_rule_dir_empty_dir(tmp_path: Path) -> None:
 
 
 def test_parse_rule_date_none() -> None:
-    from detect_forge.stale.rule_parser import _parse_rule_date
+    from detect_forge.stale._dates import _parse_rule_date
 
     assert _parse_rule_date(None) is None
 
@@ -113,7 +113,7 @@ def test_parse_rule_date_none() -> None:
 def test_parse_rule_date_date_instance() -> None:
     from datetime import date as _date
 
-    from detect_forge.stale.rule_parser import _parse_rule_date
+    from detect_forge.stale._dates import _parse_rule_date
 
     d = _date(2024, 3, 15)
     assert _parse_rule_date(d) is d
@@ -123,7 +123,7 @@ def test_parse_rule_date_datetime_instance_downconverts() -> None:
     from datetime import date as _date
     from datetime import datetime as _datetime
 
-    from detect_forge.stale.rule_parser import _parse_rule_date
+    from detect_forge.stale._dates import _parse_rule_date
 
     dt = _datetime(2024, 3, 15, 12, 0, 0)
     result = _parse_rule_date(dt)
@@ -134,7 +134,7 @@ def test_parse_rule_date_datetime_instance_downconverts() -> None:
 def test_parse_rule_date_slash_string() -> None:
     from datetime import date as _date
 
-    from detect_forge.stale.rule_parser import _parse_rule_date
+    from detect_forge.stale._dates import _parse_rule_date
 
     assert _parse_rule_date("2024/03/15") == _date(2024, 3, 15)
 
@@ -142,13 +142,13 @@ def test_parse_rule_date_slash_string() -> None:
 def test_parse_rule_date_dash_string() -> None:
     from datetime import date as _date
 
-    from detect_forge.stale.rule_parser import _parse_rule_date
+    from detect_forge.stale._dates import _parse_rule_date
 
     assert _parse_rule_date("2024-03-15") == _date(2024, 3, 15)
 
 
 def test_parse_rule_date_unparseable_returns_none() -> None:
-    from detect_forge.stale.rule_parser import _parse_rule_date
+    from detect_forge.stale._dates import _parse_rule_date
 
     assert _parse_rule_date("not a date") is None
     assert _parse_rule_date("99-99-99") is None  # invalid month/day — can't parse
