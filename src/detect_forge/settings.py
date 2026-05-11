@@ -15,6 +15,3 @@ class Settings(BaseSettings):
     cache_ttl_hours: int = 24
     attack_domain: str = "enterprise-attack"
     no_cache: bool = False
-
-
-settings = Settings()

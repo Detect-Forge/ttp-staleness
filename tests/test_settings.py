@@ -34,9 +34,3 @@ def test_env_prefix_overrides_attack_domain(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("DETECT_FORGE_ATTACK_DOMAIN", "ics-attack")
     s = Settings()
     assert s.attack_domain == "ics-attack"
-
-
-def test_module_exposes_singleton() -> None:
-    from detect_forge import settings as settings_mod
-
-    assert isinstance(settings_mod.settings, Settings)

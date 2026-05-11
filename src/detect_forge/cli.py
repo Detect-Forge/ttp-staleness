@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from .console import err_console
 from .exit_codes import GATED
-from .settings import Settings, settings
+from .settings import Settings
 
 
 @click.group()
@@ -53,7 +53,7 @@ def main() -> None:
 @click.option(
     "--domain",
     type=click.Choice(["enterprise-attack", "ics-attack", "mobile-attack"]),
-    default=settings.attack_domain,
+    default=Settings().attack_domain,
     show_default=True,
     help="ATT&CK domain to fetch",
 )
