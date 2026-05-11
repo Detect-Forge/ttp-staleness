@@ -55,7 +55,9 @@ def scan(
     directly.
 
     Args:
-        rule_dir: Directory containing Sigma rules to scan.
+        rule_dir: Directory containing detection rules to scan. Recursively
+            picks up Sigma (`.yml`/`.yaml`) and Elastic Detection Rules
+            (`.toml`, covering EQL/KQL/ESQL).
         domain: ATT&CK domain identifier ("enterprise-attack", "ics-attack",
             or "mobile-attack"). Defaults to enterprise.
         cache_dir: Where to read/write the cached STIX bundle. Defaults to
