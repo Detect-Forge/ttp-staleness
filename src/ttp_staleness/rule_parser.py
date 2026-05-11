@@ -96,6 +96,10 @@ def parse_rule_file(path: Path) -> SigmaRule | None:
         return None
 
 
+# TODO(detect-forge): the bundled rules in data/rules/ are *.toml, but this
+# default glob only matches *.yml — so `ttp-staleness scan data/rules` finds
+# nothing out of the box. Either rename the fixtures, broaden the default
+# glob, or auto-detect the rule format. See conversation 2026-05-11.
 def parse_rule_dir(
     rule_dir: Path,
     glob: str = "**/*.yml",
