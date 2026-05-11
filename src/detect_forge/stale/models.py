@@ -75,6 +75,20 @@ class TechniqueFinding(BaseModel):
     similarity_score: float | None = None
 
 
+class DiffProposal(BaseModel):
+    """An LLM-proposed rewrite of a rule that's semantically drifted from its technique."""
+
+    proposed_rule: str = Field(description="Full rewritten rule as a valid YAML/TOML string.")
+    explanation: str = Field(description="1-2 sentences describing what changed and why.")
+    changed_fields: list[str] = Field(
+        default_factory=list,
+        description="Field paths the LLM modified (e.g. ['description', 'detection.keywords']).",
+    )
+    confidence: float = Field(
+        ge=0.0, le=1.0, description="Model self-reported confidence in [0.0, 1.0]."
+    )
+
+
 class RuleScore(BaseModel):
     """Aggregated staleness score for a single detection rule."""
 
@@ -86,6 +100,7 @@ class RuleScore(BaseModel):
     worst_severity: SeverityLevel
     worst_days_stale: int
     has_attack_tags: bool
+    proposals: list[DiffProposal] = Field(default_factory=list)
 
 
 class ReportSummary(BaseModel):

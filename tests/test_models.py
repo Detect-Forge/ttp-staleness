@@ -292,3 +292,85 @@ def test_empty_staleness_report_has_no_severity() -> None:
     )
     report = StalenessReport(summary=summary, scores=[])
     assert report.has_severity("critical") is False
+
+
+def test_diff_proposal_full_construction() -> None:
+    from detect_forge.stale.models import DiffProposal
+
+    p = DiffProposal(
+        proposed_rule="title: rewritten\nid: abc\n",
+        explanation="Updated description to match T1003.001 current scope.",
+        changed_fields=["description", "tags"],
+        confidence=0.85,
+    )
+    assert p.proposed_rule.startswith("title: rewritten")
+    assert "description" in p.changed_fields
+    assert p.confidence == 0.85
+
+
+def test_diff_proposal_confidence_must_be_in_range() -> None:
+    from detect_forge.stale.models import DiffProposal
+
+    with pytest.raises(ValueError):
+        DiffProposal(
+            proposed_rule="x",
+            explanation="y",
+            changed_fields=[],
+            confidence=1.5,
+        )
+
+
+def test_diff_proposal_confidence_rejects_negative() -> None:
+    from detect_forge.stale.models import DiffProposal
+
+    with pytest.raises(ValueError):
+        DiffProposal(
+            proposed_rule="x",
+            explanation="y",
+            changed_fields=[],
+            confidence=-0.1,
+        )
+
+
+def test_rule_score_proposals_defaults_to_empty_list() -> None:
+    from pathlib import Path
+
+    from detect_forge.stale.models import RuleScore
+
+    score = RuleScore(
+        rule_id=None,
+        title="No Proposals",
+        source_file=Path("/r"),
+        status=None,
+        findings=[],
+        worst_severity="info",
+        worst_days_stale=0,
+        has_attack_tags=False,
+    )
+    assert score.proposals == []
+
+
+def test_rule_score_accepts_proposals() -> None:
+    from pathlib import Path
+
+    from detect_forge.stale.models import DiffProposal, RuleScore
+
+    p = DiffProposal(
+        proposed_rule="x",
+        explanation="y",
+        changed_fields=[],
+        confidence=0.5,
+    )
+    score = RuleScore(
+        rule_id=None,
+        title="With Proposal",
+        source_file=Path("/r"),
+        status=None,
+        findings=[],
+        worst_severity="medium",
+        worst_days_stale=0,
+        has_attack_tags=True,
+        proposals=[p],
+    )
+    assert len(score.proposals) == 1
+    assert score.proposals[0].confidence == 0.5
