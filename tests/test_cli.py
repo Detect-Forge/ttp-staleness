@@ -305,3 +305,201 @@ def test_cli_threshold_precedence_env_overrides_cli(
     assert result.exit_code == 0, result.stderr
     kwargs = patched_pipeline["score_rules"].call_args.kwargs
     assert kwargs.get("semantic_threshold") == 0.10
+
+
+def test_cli_passes_llm_model_from_config(
+    empty_rule_dir: Path,
+    patched_pipeline: dict[str, MagicMock],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """llm_model from .detect-forge.toml flows through scan() to score_rules."""
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    cfg = tmp_path / ".detect-forge.toml"
+    cfg.write_text('[stale]\nllm_model = "gpt-4o"\n')
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["stale", str(empty_rule_dir)])
+    assert result.exit_code == 0, result.stderr
+    kwargs = patched_pipeline["score_rules"].call_args.kwargs
+    assert kwargs.get("llm_model") == "gpt-4o"
+
+
+def test_cli_passes_max_proposals_from_config(
+    empty_rule_dir: Path,
+    patched_pipeline: dict[str, MagicMock],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    cfg = tmp_path / ".detect-forge.toml"
+    cfg.write_text("[stale]\nmax_proposals = 10\n")
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["stale", str(empty_rule_dir)])
+    assert result.exit_code == 0, result.stderr
+    kwargs = patched_pipeline["score_rules"].call_args.kwargs
+    assert kwargs.get("max_proposals") == 10
+
+
+def test_cli_uses_default_llm_model_when_config_absent(
+    empty_rule_dir: Path,
+    patched_pipeline: dict[str, MagicMock],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No config file → llm_model is the StaleConfig default ('gpt-4o-mini')."""
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["stale", str(empty_rule_dir)])
+    assert result.exit_code == 0, result.stderr
+    kwargs = patched_pipeline["score_rules"].call_args.kwargs
+    assert kwargs.get("llm_model") == "gpt-4o-mini"
+
+
+def test_cli_prints_skip_message_when_no_key_and_semantic_drift(
+    empty_rule_dir: Path,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When OPENAI_API_KEY is unset AND the report contains a semantic_drift
+    finding, the CLI prints the 'skipped' banner to stderr."""
+    from datetime import UTC, datetime
+    from pathlib import Path as _P
+
+    from detect_forge.stale.models import (
+        ReportSummary,
+        RuleScore,
+        StalenessReport,
+        TechniqueFinding,
+    )
+
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    drift_finding = TechniqueFinding(
+        technique_id="T1059",
+        days_stale=0,
+        severity="medium",
+        kind="semantic_drift",
+        similarity_score=0.42,
+    )
+    score = RuleScore(
+        rule_id="r",
+        title="Drift Rule",
+        source_file=_P("/rules/r.yml"),
+        status="stable",
+        findings=[drift_finding],
+        worst_severity="medium",
+        worst_days_stale=0,
+        has_attack_tags=True,
+    )
+    summary = ReportSummary(
+        total_rules=1, rules_with_findings=1,
+        critical=0, high=0, medium=1, low=0,
+        no_attack_tags=0, unknown_techniques=0,
+        deprecated_techniques=0, revoked_techniques=0,
+        generated_at=datetime.now(UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime.now(UTC),
+    )
+    fake_report = StalenessReport(summary=summary, scores=[score])
+
+    mocker.patch("detect_forge.stale.scan", return_value=fake_report)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["stale", str(empty_rule_dir)])
+    assert result.exit_code == 0
+    assert "💡" in result.stderr
+    assert "OPENAI_API_KEY" in result.stderr
+
+
+def test_cli_does_not_print_skip_message_when_key_set(
+    empty_rule_dir: Path,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """OPENAI_API_KEY is set → no skip banner even on semantic_drift findings."""
+    from datetime import UTC, datetime
+    from pathlib import Path as _P
+
+    from detect_forge.stale.models import (
+        ReportSummary,
+        RuleScore,
+        StalenessReport,
+        TechniqueFinding,
+    )
+
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    drift_finding = TechniqueFinding(
+        technique_id="T1059",
+        days_stale=0,
+        severity="medium",
+        kind="semantic_drift",
+        similarity_score=0.42,
+    )
+    score = RuleScore(
+        rule_id="r",
+        title="Drift Rule",
+        source_file=_P("/rules/r.yml"),
+        status="stable",
+        findings=[drift_finding],
+        worst_severity="medium",
+        worst_days_stale=0,
+        has_attack_tags=True,
+    )
+    summary = ReportSummary(
+        total_rules=1, rules_with_findings=1,
+        critical=0, high=0, medium=1, low=0,
+        no_attack_tags=0, unknown_techniques=0,
+        deprecated_techniques=0, revoked_techniques=0,
+        generated_at=datetime.now(UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime.now(UTC),
+    )
+    fake_report = StalenessReport(summary=summary, scores=[score])
+
+    mocker.patch("detect_forge.stale.scan", return_value=fake_report)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["stale", str(empty_rule_dir)])
+    assert result.exit_code == 0
+    assert "💡" not in result.stderr
+
+
+def test_cli_does_not_print_skip_message_when_no_drift_findings(
+    empty_rule_dir: Path,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty report or no semantic_drift findings → no skip banner regardless of key."""
+    from datetime import UTC, datetime
+
+    from detect_forge.stale.models import ReportSummary, StalenessReport
+
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    summary = ReportSummary(
+        total_rules=0, rules_with_findings=0,
+        critical=0, high=0, medium=0, low=0,
+        no_attack_tags=0, unknown_techniques=0,
+        deprecated_techniques=0, revoked_techniques=0,
+        generated_at=datetime.now(UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime.now(UTC),
+    )
+    fake_report = StalenessReport(summary=summary, scores=[])
+
+    mocker.patch("detect_forge.stale.scan", return_value=fake_report)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["stale", str(empty_rule_dir)])
+    assert result.exit_code == 0
+    assert "💡" not in result.stderr

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import click
@@ -80,6 +81,8 @@ def stale_cmd(
             cache_ttl_hours=cfg.cache_ttl_hours,
             no_cache=effective_no_cache,
             semantic_threshold=effective_threshold,
+            llm_model=stale_cfg.llm_model,
+            max_proposals=stale_cfg.max_proposals,
         )
         progress.remove_task(t)
 
@@ -94,6 +97,20 @@ def stale_cmd(
         err_console.print(f"[info]Report written to {output}[/info]")
     else:
         click.echo(rendered, nl=False, color=output_format == "terminal")
+
+    # Skip-message banner: when OPENAI_API_KEY is unset AND any rule has a
+    # semantic_drift finding, hint the user that proposals would have been
+    # generated if a key were available.
+    has_drift = any(
+        f.kind == "semantic_drift"
+        for s in report.scores
+        for f in s.findings
+    )
+    if has_drift and not os.environ.get("OPENAI_API_KEY"):
+        err_console.print(
+            "💡 LLM diff proposals skipped — set OPENAI_API_KEY to enable "
+            "automatic fix proposals for semantically drifted rules."
+        )
 
     if report.has_severity("critical"):
         ctx.exit(GATED)
