@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from ..common import common_output_options
 from ..console import err_console
 from ..exit_codes import GATED
 from ..settings import Settings
@@ -15,28 +16,7 @@ from ..settings import Settings
     "rule_dir",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
-@click.option(
-    "--format",
-    "output_format",
-    type=click.Choice(["terminal", "json", "html"]),
-    default="terminal",
-    show_default=True,
-    help="Output format",
-)
-@click.option(
-    "--output",
-    "-o",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Write output to file instead of stdout",
-)
-@click.option(
-    "--min-severity",
-    type=click.Choice(["low", "medium", "high", "critical"]),
-    default="low",
-    show_default=True,
-    help="Only show rules at or above this severity",
-)
+@common_output_options
 @click.option(
     "--no-cache",
     is_flag=True,
