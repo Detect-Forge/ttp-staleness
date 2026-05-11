@@ -77,7 +77,9 @@ detect-forge stale path/to/rules --format json -o report.json
 Use exit-code `2` to fail your CI pipeline:
 
 ```bash
-detect-forge stale path/to/rules || [ $? -ne 2 ] && exit $?
+detect-forge stale path/to/rules
+code=$?
+if [ "$code" -eq 2 ]; then exit 2; fi
 ```
 
 ### Environment variables
