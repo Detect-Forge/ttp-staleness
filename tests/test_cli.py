@@ -120,6 +120,20 @@ def test_scan_no_cache_sets_ttl_zero(
     assert kwargs["cache_dir"] == Path.home() / ".cache" / "detect-forge"
 
 
+def test_scan_honors_settings_no_cache(
+    empty_rule_dir: Path,
+    patched_pipeline: dict[str, MagicMock],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DETECT_FORGE_NO_CACHE=true must force ttl=0 even without the --no-cache flag."""
+    monkeypatch.setenv("DETECT_FORGE_NO_CACHE", "true")
+    runner = CliRunner()
+    result = runner.invoke(main, ["scan", str(empty_rule_dir)])
+    assert result.exit_code == 0, result.stderr
+    kwargs = patched_pipeline["build_index"].call_args.kwargs
+    assert kwargs["ttl_hours"] == 0
+
+
 def test_scan_domain_option_flows_through(
     empty_rule_dir: Path, patched_pipeline: dict[str, MagicMock]
 ) -> None:

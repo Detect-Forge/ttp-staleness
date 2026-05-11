@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from .console import err_console
 from .exit_codes import GATED
-from .settings import settings
+from .settings import Settings, settings
 
 
 @click.group()
@@ -68,7 +68,8 @@ def scan(
     """Scan RULE_DIR for Sigma rules and score them for ATT&CK staleness."""
     from .stale import attack_client, reporter, rule_parser, scorer
 
-    ttl = 0 if no_cache else settings.cache_ttl_hours
+    cfg = Settings()
+    ttl = 0 if (no_cache or cfg.no_cache) else cfg.cache_ttl_hours
 
     with Progress(
         SpinnerColumn(),
@@ -78,7 +79,7 @@ def scan(
     ) as progress:
         t1 = progress.add_task("Fetching ATT&CK bundle...", total=None)
         index = attack_client.build_index(
-            domain=domain, cache_dir=settings.cache_dir, ttl_hours=ttl
+            domain=domain, cache_dir=cfg.cache_dir, ttl_hours=ttl
         )
         progress.remove_task(t1)
 
