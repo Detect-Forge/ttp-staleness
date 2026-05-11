@@ -11,6 +11,7 @@ from pytest_mock import MockerFixture
 
 from detect_forge import __version__
 from detect_forge.cli import main
+from detect_forge.exit_codes import GATED
 from detect_forge.stale.models import (
     AttackIndex,
     ReportSummary,
@@ -182,7 +183,7 @@ def test_scan_exits_2_when_critical_finding(
 
     runner = CliRunner()
     result = runner.invoke(main, ["scan", str(empty_rule_dir)])
-    assert result.exit_code == 2
+    assert result.exit_code == GATED
 
 
 def test_scan_rejects_nonexistent_rule_dir(tmp_path: Path) -> None:
