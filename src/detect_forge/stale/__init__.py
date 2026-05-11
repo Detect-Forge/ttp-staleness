@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from ..cache import default_cache_dir
+from . import attack_client, rule_parser, scorer
+from .attack_client import build_index
+from .models import (
+    AttackIndex,
+    AttackTechnique,
+    FindingKind,
+    ReportSummary,
+    RuleScore,
+    SeverityLevel,
+    SigmaRule,
+    StalenessReport,
+    TechniqueFinding,
+)
+from .reporter import render
+from .rule_parser import parse_rule_dir
+from .scorer import score_rule, score_rules
+
+__all__ = [
+    "AttackIndex",
+    "AttackTechnique",
+    "FindingKind",
+    "ReportSummary",
+    "RuleScore",
+    "SeverityLevel",
+    "SigmaRule",
+    "StalenessReport",
+    "TechniqueFinding",
+    "build_index",
+    "parse_rule_dir",
+    "render",
+    "scan",
+    "score_rule",
+    "score_rules",
+]
+
+
+def scan(
+    rule_dir: Path,
+    *,
+    domain: str = "enterprise-attack",
+    cache_dir: Path | None = None,
+    cache_ttl_hours: int = 24,
+    no_cache: bool = False,
+) -> StalenessReport:
+    """Run a stale scan and return the structured StalenessReport.
+
+    Public Python API for the `stale` capability. The CLI subcommand
+    (`detect-forge stale`) wraps this with output rendering and exit-code
+    logic; programmatic callers can use the returned ``StalenessReport``
+    directly.
+
+    Args:
+        rule_dir: Directory containing Sigma rules to scan.
+        domain: ATT&CK domain identifier ("enterprise-attack", "ics-attack",
+            or "mobile-attack"). Defaults to enterprise.
+        cache_dir: Where to read/write the cached STIX bundle. Defaults to
+            ``default_cache_dir()`` (XDG-aware).
+        cache_ttl_hours: Cache TTL in hours. Ignored if ``no_cache`` is True.
+        no_cache: If True, bypass the cache and refetch.
+
+    Returns:
+        A ``StalenessReport`` aggregating per-rule findings.
+    """
+    ttl = 0 if no_cache else cache_ttl_hours
+    resolved_cache_dir = cache_dir if cache_dir is not None else default_cache_dir()
+    index = attack_client.build_index(
+        domain=domain, cache_dir=resolved_cache_dir, ttl_hours=ttl
+    )
+    rules = rule_parser.parse_rule_dir(rule_dir)
+    return scorer.score_rules(rules, index)

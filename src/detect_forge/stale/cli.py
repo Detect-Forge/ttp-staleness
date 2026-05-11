@@ -41,10 +41,10 @@ def stale_cmd(
     domain: str,
 ) -> None:
     """Score detection rules for ATT&CK technique staleness."""
-    from . import attack_client, reporter, rule_parser, scorer
+    from . import reporter, scan
 
     cfg = Settings()
-    ttl = 0 if (no_cache or cfg.no_cache) else cfg.cache_ttl_hours
+    effective_no_cache = no_cache or cfg.no_cache
 
     with Progress(
         SpinnerColumn(),
@@ -52,19 +52,15 @@ def stale_cmd(
         console=err_console,
         transient=True,
     ) as progress:
-        t1 = progress.add_task("Fetching ATT&CK bundle...", total=None)
-        index = attack_client.build_index(
-            domain=domain, cache_dir=cfg.cache_dir, ttl_hours=ttl
+        t = progress.add_task("Scoring rules against ATT&CK...", total=None)
+        report = scan(
+            rule_dir,
+            domain=domain,
+            cache_dir=cfg.cache_dir,
+            cache_ttl_hours=cfg.cache_ttl_hours,
+            no_cache=effective_no_cache,
         )
-        progress.remove_task(t1)
-
-        t2 = progress.add_task(f"Parsing rules in {rule_dir}...", total=None)
-        rules = rule_parser.parse_rule_dir(rule_dir)
-        progress.remove_task(t2)
-
-        t3 = progress.add_task("Scoring...", total=None)
-        report = scorer.score_rules(rules, index)
-        progress.remove_task(t3)
+        progress.remove_task(t)
 
     rendered = reporter.render(
         report,
