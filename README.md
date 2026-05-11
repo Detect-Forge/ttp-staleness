@@ -16,7 +16,7 @@ Designed to run in GitHub Actions as a CI gate. No data leaves your environment.
 
 ## Status
 
-🔨 Building toward May 23, 2026 launch — `stale` semantic alignment now shipped (Phase 3.a); true historical drift (Phase 3.b) and LLM diff proposals (Phase 4) planned. Other subcommands (`backtest`, `coverage`, `cti ingest`, `audit`) are registered as stubs and will ship in subsequent releases.
+🚀 May 23, 2026 launch — `stale` ships with all three scoring dimensions: timestamp drift, semantic drift (Phase 3.a), and LLM diff proposals (Phase 4). True historical drift (Phase 3.b) deferred to v0.2. Other subcommands (`backtest`, `coverage`, `cti ingest`, `audit`) are registered as stubs and will ship in subsequent releases.
 
 ## Requirements
 
@@ -68,6 +68,17 @@ Each rule is embedded as `title + description` (the natural-language portion —
 
 Embeddings are computed once with [`fastembed`](https://github.com/qdrant/fastembed) (model `BAAI/bge-small-en-v1.5`, ~30MB, auto-downloaded on first run) and cached under `$CACHE_DIR/embeddings/`. Subsequent runs read from cache. There is no `--no-semantic` flag: warm-cache cost is near-zero, and cold-cache work has to happen at least once anyway.
 
+#### Similarity score reference
+
+| Similarity | What it means |
+|---|---|
+| < 0.50 | Major concept divergence — rule and technique are describing different things |
+| 0.50–0.70 | Significant drift — technique has evolved substantially |
+| 0.70–0.85 | Moderate drift — wording changes, some behavioral shifts |
+| > 0.85 | Minor or no drift |
+
+The default trigger (`semantic_threshold = 0.65`) catches rules with significant or major drift — meaningful divergence that warrants attention, not just a flag.
+
 Progress spinners go to **stderr**; the report goes to **stdout** so JSON output can be piped safely:
 
 ```bash
@@ -101,6 +112,47 @@ All settings can be overridden via `DETECT_FORGE_`-prefixed env vars (or a `.env
 | `DETECT_FORGE_CACHE_TTL_HOURS` | `24` | Cache lifetime in hours. |
 | `DETECT_FORGE_ATTACK_DOMAIN` | `enterprise-attack` | Default `--domain` value. |
 | `DETECT_FORGE_NO_CACHE` | `false` | If truthy, always bypass the cache. |
+
+### LLM Diff Proposals (Phase 4)
+
+When a rule emits a `semantic_drift` finding, `stale` can optionally call OpenAI's structured-output API to propose a rewritten rule aligned with the current ATT&CK technique. Proposals are **BYOLLM** and **never auto-applied** — the practitioner reviews every suggestion and manually decides what to keep.
+
+#### Enabling
+
+Set `OPENAI_API_KEY` in your environment. Without it, the scan completes normally and prints `💡 LLM diff proposals skipped` at the end of the report.
+
+```bash
+export OPENAI_API_KEY=sk-...
+detect-forge stale ./rules
+```
+
+#### Configuration via `.detect-forge.toml`
+
+LLM proposal settings live in `.detect-forge.toml` (discovered upward from your CWD, halting at the git root). There are no CLI flags for these.
+
+```toml
+[stale]
+semantic_threshold = 0.65   # Cosine similarity floor; pairs below trigger a proposal
+llm_model = "gpt-4o-mini"   # Any OpenAI chat-completion model that supports structured outputs
+max_proposals = 5           # Hard ceiling on LLM calls per scan run (cost guard)
+```
+
+`max_proposals` is your primary cost lever — every proposal attempt (success, refusal, or validation rejection) counts against this quota.
+
+#### Cost
+
+At default settings (`gpt-4o-mini`, 5 proposals): well under $0.01 per scan. Roughly $0.0005 per proposal. The `max_proposals` setting is your hard cost ceiling.
+
+#### What proposals look like
+
+For each candidate rule, you get a terminal panel with the rule filename, the model's confidence (0–1), the list of fields it changed, a brief explanation, and the rewritten rule body in syntax-highlighted YAML (Sigma) or TOML (Elastic). The HTML report adds a "LLM Proposals" section at the bottom with color-coded confidence badges.
+
+#### What proposals don't do
+
+- They never modify your rules on disk. Apply changes manually after review.
+- They don't run if `OPENAI_API_KEY` is unset.
+- They use only the rule's natural-language fields and your current ATT&CK technique description — no telemetry leaves your environment beyond the OpenAI API call.
+- They're not a substitute for human review. The model's `confidence` field is self-reported and unreliable — treat every proposal as a draft.
 
 ## Python API
 
