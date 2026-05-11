@@ -104,7 +104,7 @@ if [ "$code" -eq 2 ]; then exit 2; fi
 
 ### Environment variables
 
-All settings can be overridden via `DETECT_FORGE_`-prefixed env vars (or a `.env` file in the working directory):
+All settings can be overridden via `DETECT_FORGE_`-prefixed env vars (or a `.env` file in the working directory). Copy `.env.sample` at the repo root to `.env` to get started.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -112,6 +112,8 @@ All settings can be overridden via `DETECT_FORGE_`-prefixed env vars (or a `.env
 | `DETECT_FORGE_CACHE_TTL_HOURS` | `24` | Cache lifetime in hours. |
 | `DETECT_FORGE_ATTACK_DOMAIN` | `enterprise-attack` | Default `--domain` value. |
 | `DETECT_FORGE_NO_CACHE` | `false` | If truthy, always bypass the cache. |
+| `DETECT_FORGE_SEMANTIC_THRESHOLD` | unset | Overrides `semantic_threshold` from `.detect-forge.toml` and the CLI flag (highest precedence). |
+| `OPENAI_API_KEY` | unset | Required to enable LLM diff proposals. When unset, scans complete normally and print a skip banner. |
 
 ### LLM Diff Proposals (Phase 4)
 
@@ -128,7 +130,7 @@ detect-forge stale ./rules
 
 #### Configuration via `.detect-forge.toml`
 
-LLM proposal settings live in `.detect-forge.toml` (discovered upward from your CWD, halting at the git root). There are no CLI flags for these.
+LLM proposal settings live in `.detect-forge.toml` (discovered upward from your CWD, halting at the git root). There are no CLI flags for these. A starter `.detect-forge.toml` with the defaults ships at the repo root — edit in place or copy to your own project.
 
 ```toml
 [stale]
