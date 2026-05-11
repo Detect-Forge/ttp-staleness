@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from ttp_staleness.attack_client import build_index
-from ttp_staleness.models import AttackIndex
+from detect_forge.stale.attack_client import build_index
+from detect_forge.stale.models import AttackIndex
 
 
 @pytest.fixture
@@ -61,7 +61,7 @@ def test_no_attack_id_object_is_skipped(stix_fixture: Path) -> None:
 def test_cache_is_written_on_miss(
     tmp_path: Path, stix_fixture: Path, requests_mock
 ) -> None:
-    from ttp_staleness.attack_client import STIX_URLS
+    from detect_forge.stale.attack_client import STIX_URLS
 
     url = STIX_URLS["enterprise-attack"]
     raw_bundle = stix_fixture.read_text(encoding="utf-8")
@@ -84,7 +84,7 @@ def test_cache_is_used_on_hit(
     cache_dir.mkdir()
     shutil.copy(stix_fixture, cache_dir / "enterprise-attack.json")
 
-    get_spy = mocker.patch("ttp_staleness.attack_client.requests.get")
+    get_spy = mocker.patch("detect_forge.stale.attack_client.requests.get")
 
     idx = build_index(cache_dir=cache_dir, ttl_hours=999)
 

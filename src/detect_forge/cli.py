@@ -11,7 +11,7 @@ from .settings import settings
 
 
 @click.group()
-@click.version_option(package_name="ttp-staleness")
+@click.version_option(package_name="detect-forge")
 def main() -> None:
     """Score your detection rules for ATT&CK technique staleness."""
 
@@ -65,7 +65,7 @@ def scan(
     domain: str,
 ) -> None:
     """Scan RULE_DIR for Sigma rules and score them for ATT&CK staleness."""
-    from . import attack_client, reporter, rule_parser, scorer
+    from .stale import attack_client, reporter, rule_parser, scorer
 
     ttl = 0 if no_cache else settings.cache_ttl_hours
 
@@ -99,11 +99,6 @@ def scan(
         output.write_text(rendered, encoding="utf-8")
         err_console.print(f"[info]Report written to {output}[/info]")
     else:
-        # For terminal format the rendered string already contains ANSI escape
-        # codes (force_terminal=True in reporter). Pass color=True so click
-        # does not strip them even when stdout is not a TTY (e.g. piped to
-        # less -R or hexdump). JSON and HTML have no ANSI codes so color=True
-        # is harmless for those formats.
         click.echo(rendered, nl=False, color=output_format == "terminal")
 
     if report.has_severity("critical"):

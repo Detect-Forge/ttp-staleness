@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from ttp_staleness.models import (
+from detect_forge.stale.models import (
     AttackIndex,
     AttackTechnique,
     FindingKind,

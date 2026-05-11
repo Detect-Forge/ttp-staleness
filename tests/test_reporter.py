@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from ttp_staleness.reporter import render
+from detect_forge.stale.reporter import render
 
 
 def test_json_render_parses_as_json(sample_report) -> None:
@@ -17,7 +17,7 @@ def test_json_render_parses_as_json(sample_report) -> None:
 def test_html_render_contains_doctype_and_title(sample_report) -> None:
     out = render(sample_report, output_format="html", min_severity="low")
     assert "<!DOCTYPE html>" in out
-    assert "TTP Staleness Report" in out
+    assert "Detect-Forge Stale Report" in out
 
 
 def test_html_render_shows_summary_counts(sample_report) -> None:
@@ -48,7 +48,7 @@ def test_unknown_format_raises(sample_report) -> None:
 
 
 def test_filter_scores_drops_below_threshold(sample_report) -> None:
-    from ttp_staleness.reporter import _filter_scores
+    from detect_forge.stale.reporter import _filter_scores
 
     filtered = _filter_scores(sample_report, "high")
     severities = {s.worst_severity for s in filtered.scores}
@@ -58,7 +58,7 @@ def test_filter_scores_drops_below_threshold(sample_report) -> None:
 
 
 def test_filter_scores_info_threshold_keeps_all(sample_report) -> None:
-    from ttp_staleness.reporter import _filter_scores
+    from detect_forge.stale.reporter import _filter_scores
 
     filtered = _filter_scores(sample_report, "info")
     assert len(filtered.scores) == len(sample_report.scores)
@@ -67,7 +67,7 @@ def test_filter_scores_info_threshold_keeps_all(sample_report) -> None:
 def test_filter_scores_raises_on_unknown_level(sample_report) -> None:
     import pytest
 
-    from ttp_staleness.reporter import _filter_scores
+    from detect_forge.stale.reporter import _filter_scores
 
     with pytest.raises(KeyError):
         _filter_scores(sample_report, "extreme")

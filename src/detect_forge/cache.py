@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-DEFAULT_CACHE_DIR = Path.home() / ".cache" / "ttp-staleness"
+DEFAULT_CACHE_DIR = Path.home() / ".cache" / "detect-forge"
 DEFAULT_TTL_HOURS = 24
 
 

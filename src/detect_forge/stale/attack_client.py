@@ -8,7 +8,7 @@ from typing import Any
 import requests
 from mitreattack.stix20 import MitreAttackData
 
-from .cache import (
+from ..cache import (
     DEFAULT_CACHE_DIR,
     DEFAULT_TTL_HOURS,
     cache_path,

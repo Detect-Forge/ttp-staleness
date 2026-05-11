@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from ttp_staleness.settings import Settings
+from detect_forge.settings import Settings
 
 
 def test_defaults_match_spec() -> None:
     s = Settings()
-    assert s.cache_dir == Path.home() / ".cache" / "ttp-staleness"
+    assert s.cache_dir == Path.home() / ".cache" / "detect-forge"
     assert s.cache_ttl_hours == 24
     assert s.attack_domain == "enterprise-attack"
     assert s.no_cache is False
@@ -18,24 +18,24 @@ def test_defaults_match_spec() -> None:
 def test_env_prefix_overrides_cache_dir(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("TTP_CACHE_DIR", str(tmp_path / "alt"))
+    monkeypatch.setenv("DETECT_FORGE_CACHE_DIR", str(tmp_path / "alt"))
     s = Settings()
     assert s.cache_dir == tmp_path / "alt"
 
 
 def test_env_prefix_overrides_no_cache(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TTP_NO_CACHE", "true")
+    monkeypatch.setenv("DETECT_FORGE_NO_CACHE", "true")
     s = Settings()
     assert s.no_cache is True
 
 
 def test_env_prefix_overrides_attack_domain(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TTP_ATTACK_DOMAIN", "ics-attack")
+    monkeypatch.setenv("DETECT_FORGE_ATTACK_DOMAIN", "ics-attack")
     s = Settings()
     assert s.attack_domain == "ics-attack"
 
 
 def test_module_exposes_singleton() -> None:
-    from ttp_staleness import settings as settings_mod
+    from detect_forge import settings as settings_mod
 
     assert isinstance(settings_mod.settings, Settings)

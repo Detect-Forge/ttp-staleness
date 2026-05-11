@@ -9,9 +9,9 @@ import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from ttp_staleness import __version__
-from ttp_staleness.cli import main
-from ttp_staleness.models import (
+from detect_forge import __version__
+from detect_forge.cli import main
+from detect_forge.stale.models import (
     AttackIndex,
     ReportSummary,
     RuleScore,
@@ -62,13 +62,13 @@ def patched_pipeline(mocker: MockerFixture) -> dict[str, MagicMock]:
     """Replace scan's lazy-imported functions with mocks returning empty data."""
     return {
         "build_index": mocker.patch(
-            "ttp_staleness.attack_client.build_index", return_value=_EMPTY_INDEX
+            "detect_forge.stale.attack_client.build_index", return_value=_EMPTY_INDEX
         ),
         "parse_rule_dir": mocker.patch(
-            "ttp_staleness.rule_parser.parse_rule_dir", return_value=[]
+            "detect_forge.stale.rule_parser.parse_rule_dir", return_value=[]
         ),
         "score_rules": mocker.patch(
-            "ttp_staleness.scorer.score_rules", return_value=_EMPTY_REPORT
+            "detect_forge.stale.scorer.score_rules", return_value=_EMPTY_REPORT
         ),
     }
 
@@ -88,7 +88,7 @@ def test_scan_happy_path_terminal(
     runner = CliRunner()
     result = runner.invoke(main, ["scan", str(empty_rule_dir)])
     assert result.exit_code == 0, result.stderr
-    assert "ttp-staleness" in result.stdout.lower()
+    assert "detect-forge" in result.stdout.lower()
     patched_pipeline["build_index"].assert_called_once()
     patched_pipeline["parse_rule_dir"].assert_called_once()
     patched_pipeline["score_rules"].assert_called_once()
@@ -113,7 +113,7 @@ def test_scan_no_cache_sets_ttl_zero(
     assert result.exit_code == 0
     kwargs = patched_pipeline["build_index"].call_args.kwargs
     assert kwargs["ttl_hours"] == 0
-    assert kwargs["cache_dir"] == Path.home() / ".cache" / "ttp-staleness"
+    assert kwargs["cache_dir"] == Path.home() / ".cache" / "detect-forge"
 
 
 def test_scan_domain_option_flows_through(
@@ -175,10 +175,10 @@ def test_scan_exits_1_when_critical_finding(
     critical_report = StalenessReport(summary=summary, scores=[critical_score])
 
     mocker.patch(
-        "ttp_staleness.attack_client.build_index", return_value=_EMPTY_INDEX
+        "detect_forge.stale.attack_client.build_index", return_value=_EMPTY_INDEX
     )
-    mocker.patch("ttp_staleness.rule_parser.parse_rule_dir", return_value=[])
-    mocker.patch("ttp_staleness.scorer.score_rules", return_value=critical_report)
+    mocker.patch("detect_forge.stale.rule_parser.parse_rule_dir", return_value=[])
+    mocker.patch("detect_forge.stale.scorer.score_rules", return_value=critical_report)
 
     runner = CliRunner()
     result = runner.invoke(main, ["scan", str(empty_rule_dir)])

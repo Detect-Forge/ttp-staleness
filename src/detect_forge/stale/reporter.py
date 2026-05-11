@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .console import theme
+from ..console import theme
 from .models import StalenessReport
 
 _SEVERITY_RANK: dict[str, int] = {
@@ -57,7 +57,7 @@ def _render_terminal(report: StalenessReport, min_severity: str) -> str:
         f"\u00b7 Deprecated: {s.deprecated_techniques} "
         f"\u00b7 Revoked: {s.revoked_techniques}"
     )
-    console.print(Panel(summary_text, title="TTP-Staleness Report", expand=False))
+    console.print(Panel(summary_text, title="Detect-Forge Stale Report", expand=False))
 
     table = Table(box=box.SIMPLE_HEAVY, show_header=True)
     table.add_column("Severity", width=10)
@@ -93,7 +93,7 @@ def _render_html(report: StalenessReport, min_severity: str) -> str:
     """Render the report to a self-contained HTML string via Jinja2."""
     filtered = _filter_scores(report, min_severity)
     env = Environment(
-        loader=PackageLoader("ttp_staleness", "templates"),
+        loader=PackageLoader("detect_forge.stale", "templates"),
         autoescape=True,
     )
     template = env.get_template("report.html.j2")

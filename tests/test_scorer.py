@@ -1,14 +1,14 @@
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
-from ttp_staleness.models import (
+from detect_forge.stale.models import (
     AttackIndex,
     AttackTechnique,
     RuleScore,
     SigmaRule,
     StalenessReport,
 )
-from ttp_staleness.scorer import score_rule, score_rules
+from detect_forge.stale.scorer import score_rule, score_rules
 
 
 def test_score_rules_sorted_worst_first() -> None:

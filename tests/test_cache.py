@@ -5,7 +5,7 @@ import os
 import time
 from pathlib import Path
 
-from ttp_staleness.cache import (
+from detect_forge.cache import (
     DEFAULT_CACHE_DIR,
     DEFAULT_TTL_HOURS,
     cache_path,
@@ -16,7 +16,7 @@ from ttp_staleness.cache import (
 
 
 def test_defaults_match_spec() -> None:
-    assert Path.home() / ".cache" / "ttp-staleness" == DEFAULT_CACHE_DIR
+    assert Path.home() / ".cache" / "detect-forge" == DEFAULT_CACHE_DIR
     assert DEFAULT_TTL_HOURS == 24
 
 

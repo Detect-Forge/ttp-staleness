@@ -1,6 +1,6 @@
 from rich.console import Console
 
-from ttp_staleness.console import console, err_console, theme
+from detect_forge.console import console, err_console, theme
 
 
 def test_theme_has_required_severity_styles() -> None:

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>TTP Staleness Report — {{ summary.generated_at.date() }}</title>
+<title>Detect-Forge Stale Report — {{ summary.generated_at.date() }}</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
   h1 { margin-bottom: 1rem; }
@@ -31,7 +31,7 @@
 </style>
 </head>
 <body>
-<h1>TTP Staleness Report</h1>
+<h1>Detect-Forge Stale Report</h1>
 <div class="summary">
   <div class="stat"><div class="value">{{ summary.total_rules }}</div><div class="label">Rules Scanned</div></div>
   <div class="stat"><div class="value critical">{{ summary.critical }}</div><div class="label">Critical</div></div>

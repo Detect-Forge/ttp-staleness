@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from ttp_staleness.models import StalenessReport
+    from detect_forge.stale.models import StalenessReport
 
 
 @pytest.fixture(autouse=True)
-def _clear_ttp_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Strip any ambient TTP_* env vars so tests get a clean Settings()."""
+def _clear_detect_forge_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Strip any ambient DETECT_FORGE_* env vars so tests get a clean Settings()."""
     for key in list(os.environ):
-        if key.startswith("TTP_"):
+        if key.startswith("DETECT_FORGE_"):
             monkeypatch.delenv(key, raising=False)
     yield
 
@@ -33,7 +33,7 @@ def sample_report() -> StalenessReport:
     from datetime import UTC, date, datetime
     from pathlib import Path as _Path
 
-    from ttp_staleness.models import (
+    from detect_forge.stale.models import (
         ReportSummary,
         RuleScore,
         StalenessReport,
