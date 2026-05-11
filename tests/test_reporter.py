@@ -208,3 +208,107 @@ def test_json_output_unconditionally_includes_similarity_score(sample_report) ->
         for finding in score["findings"]:
             assert "similarity_score" in finding
             assert finding["similarity_score"] is None
+
+
+def test_terminal_report_omits_proposals_section_when_none_present(
+    sample_report,
+) -> None:
+    """A report with no proposals doesn't add any LLM Proposal panel."""
+    from detect_forge.stale.reporter import render
+
+    output = render(sample_report, output_format="terminal", min_severity="info")
+    assert "LLM Diff Proposal" not in output
+
+
+def test_terminal_report_renders_proposal_when_present() -> None:
+    """A proposal on a RuleScore should appear as a Rich panel + YAML body."""
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from detect_forge.stale.models import (
+        DiffProposal,
+        ReportSummary,
+        RuleScore,
+        StalenessReport,
+    )
+    from detect_forge.stale.reporter import render
+
+    proposal = DiffProposal(
+        proposed_rule="title: Rewritten Test Rule\nid: abc\n",
+        explanation="Updated the description to reflect T1059.001.",
+        changed_fields=["description"],
+        confidence=0.84,
+    )
+    score = RuleScore(
+        rule_id="r1",
+        title="Test Rule",
+        source_file=Path("/rules/r.yml"),
+        status="stable",
+        findings=[],
+        worst_severity="medium",
+        worst_days_stale=0,
+        has_attack_tags=True,
+        proposals=[proposal],
+    )
+    summary = ReportSummary(
+        total_rules=1, rules_with_findings=1,
+        critical=0, high=0, medium=1, low=0,
+        no_attack_tags=0, unknown_techniques=0,
+        deprecated_techniques=0, revoked_techniques=0,
+        generated_at=datetime.now(UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime.now(UTC),
+    )
+    report = StalenessReport(summary=summary, scores=[score])
+
+    output = render(report, output_format="terminal", min_severity="info")
+    assert "LLM Diff Proposal" in output
+    assert "Test Rule" in output
+    assert "0.84" in output
+    assert "description" in output
+    assert "Rewritten Test Rule" in output
+
+
+def test_terminal_proposal_uses_toml_syntax_for_elastic_rules() -> None:
+    """A proposal on an Elastic .toml rule renders the body with TOML highlighting."""
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from detect_forge.stale.models import (
+        DiffProposal,
+        ReportSummary,
+        RuleScore,
+        StalenessReport,
+    )
+    from detect_forge.stale.reporter import render
+
+    proposal = DiffProposal(
+        proposed_rule='[rule]\nname = "Rewritten Elastic"\n',
+        explanation="x",
+        changed_fields=[],
+        confidence=0.7,
+    )
+    score = RuleScore(
+        rule_id="r1",
+        title="Test Elastic",
+        source_file=Path("/rules/r.toml"),
+        status="production",
+        findings=[],
+        worst_severity="medium",
+        worst_days_stale=0,
+        has_attack_tags=True,
+        proposals=[proposal],
+    )
+    summary = ReportSummary(
+        total_rules=1, rules_with_findings=1,
+        critical=0, high=0, medium=1, low=0,
+        no_attack_tags=0, unknown_techniques=0,
+        deprecated_techniques=0, revoked_techniques=0,
+        generated_at=datetime.now(UTC),
+        attack_domain="enterprise-attack",
+        attack_fetched_at=datetime.now(UTC),
+    )
+    report = StalenessReport(summary=summary, scores=[score])
+
+    output = render(report, output_format="terminal", min_severity="info")
+    assert "Rewritten Elastic" in output

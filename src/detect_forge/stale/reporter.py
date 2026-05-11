@@ -6,6 +6,7 @@ from jinja2 import Environment, PackageLoader
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
+from rich.syntax import Syntax
 from rich.table import Table
 
 from ..console import theme
@@ -103,6 +104,27 @@ def _render_terminal(report: StalenessReport, min_severity: str) -> str:
             table.add_row(*row)
 
     console.print(table)
+
+    # ---- LLM Diff Proposals section ----
+    proposals_with_context = [
+        (score, p) for score in report.scores for p in score.proposals
+    ]
+    for score, proposal in proposals_with_context:
+        language = "toml" if score.source_file.suffix.lower() == ".toml" else "yaml"
+        header = (
+            f"[heading]Rule:[/heading] {score.title}\n"
+            f"[heading]File:[/heading] {score.source_file.name}\n"
+            f"Confidence: [medium]{proposal.confidence:.2f}[/medium]"
+            + (
+                f"  ·  Changed: {', '.join(proposal.changed_fields)}"
+                if proposal.changed_fields
+                else ""
+            )
+            + f"\n\n{proposal.explanation}"
+        )
+        console.print(Panel(header, title="LLM Diff Proposal", expand=False))
+        console.print(Syntax(proposal.proposed_rule, language, theme="ansi_dark"))
+
     return buf.getvalue()
 
 
