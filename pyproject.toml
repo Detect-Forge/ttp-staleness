@@ -19,6 +19,7 @@ dependencies = [
     "pySigma>=0.10",
     "jinja2>=3.1",
     "fastembed>=0.4",
+    "openai>=1.40",
 ]
 
 [project.urls]
@@ -41,7 +42,10 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/detect_forge"]
-include = ["src/detect_forge/stale/templates/*"]
+include = [
+    "src/detect_forge/stale/templates/*",
+    "src/detect_forge/stale/prompts/*",
+]
 
 [tool.ruff]
 line-length = 100
@@ -55,7 +59,7 @@ strict = true
 python_version = "3.12"
 
 [[tool.mypy.overrides]]
-module = ["mitreattack.*", "sigma.*", "requests_mock.*", "fastembed.*"]
+module = ["mitreattack.*", "sigma.*", "requests_mock.*", "fastembed.*", "openai.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

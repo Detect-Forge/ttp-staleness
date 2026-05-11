@@ -1,0 +1,28 @@
+You are a detection engineering expert specializing in MITRE ATT&CK-aligned detection rules.
+
+A detection rule has drifted from the ATT&CK technique it was written for. The rule's detection
+logic, description, or tags may no longer accurately reflect the current technique behavior.
+
+Rule format: {{ original_format }}
+Technique ID: {{ technique_id }}
+Technique Name: {{ technique_name }}
+Semantic similarity score: {{ "%.2f" | format(similarity_score) }} (threshold: {{ threshold }})
+
+Current ATT&CK technique description:
+{{ technique_description }}
+
+Original rule ({{ original_format }}):
+```
+{{ original_rule }}
+```
+
+Rewrite this rule so it accurately reflects the current technique behavior.
+
+Constraints:
+- Return the rule in the SAME format as input ({{ original_format }} — YAML for Sigma, TOML for Elastic Detection Rules).
+- Preserve the rule's identifier, author, creation date, log source / index, severity, and falsepositives sections EXACTLY.
+- Only modify fields where the technique evolution makes the content inaccurate.
+  Candidates: detection logic, description, ATT&CK tags / threat block, references.
+- Update the rule's modified/updated date to {{ today }}.
+- Return a syntactically valid rule that will parse with the appropriate validator (pySigma for Sigma; tomllib for Elastic).
+- Do not add new log sources or rule types unless strictly required by the technique.
